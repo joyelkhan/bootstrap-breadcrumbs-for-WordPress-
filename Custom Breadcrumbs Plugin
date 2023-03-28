@@ -1,0 +1,103 @@
+<?php
+/*
+Plugin Name: Custom Breadcrumbs Plugin
+Description: Adds a custom Bootstrap 5 breadcrumb to your WordPress site
+Version: 1.1
+Author: MD Abu Naser Khan 
+*/
+
+// Add custom shortcode for the breadcrumb
+function custom_breadcrumbs_shortcode($atts) {
+  extract(shortcode_atts(array(
+    'icon' => ''
+  ), $atts));
+  
+  $output = '<nav aria-label="breadcrumb">';
+  $output .= '<ol class="breadcrumb">';
+  
+  if (!is_front_page()) {
+    $output .= '<li class="breadcrumb-item"><a href="' . home_url() . '">Home</a></li>';
+  }
+  
+  if (is_category() || is_single()) {
+    $categories = get_the_category();
+    $category_id = $categories[0]->cat_ID;
+    $category_link = get_category_link($category_id);
+    $category_name = get_cat_name($category_id);
+    if ($icon) {
+      $output .= '<li class="breadcrumb-item"><a href="' . $category_link . '"><i class="' . $icon . '"></i>' . $category_name . '</a></li>';
+    } else {
+      $output .= '<li class="breadcrumb-item"><a href="' . $category_link . '">' . $category_name . '</a></li>';
+    }
+    if (is_single()) {
+      $output .= '<li class="breadcrumb-item active" aria-current="page">' . get_the_title() . '</li>';
+    }
+  } elseif (is_page()) {
+    global $post;
+    if ($post->post_parent) {
+      $parent_id = $post->post_parent;
+      $parent_title = get_the_title($parent_id);
+      $parent_link = get_permalink($parent_id);
+      if ($icon) {
+        $output .= '<li class="breadcrumb-item"><a href="' . $parent_link . '"><i class="' . $icon . '"></i>' . $parent_title . '</a></li>';
+      } else {
+        $output .= '<li class="breadcrumb-item"><a href="' . $parent_link . '">' . $parent_title . '</a></li>';
+      }
+    }
+    if ($icon) {
+      $output .= '<li class="breadcrumb-item active" aria-current="page"><i class="' . $icon . '"></i>' . get_the_title() . '</li>';
+    } else {
+      $output .= '<li class="breadcrumb-item active" aria-current="page">' . get_the_title() . '</li>';
+    }
+  } elseif (is_search()) {
+    $output .= '<li class="breadcrumb-item active" aria-current="page">Search Results</li>';
+  } elseif (is_404()) {
+    $output .= '<li class="breadcrumb-item active" aria-current="page">404 Not Found</li>';
+  } else {
+    if ($icon) {
+      $output .= '<li class="breadcrumb-item active" aria-current="page"><i class="' . $icon . '"></i>' . get_the_title() . '</li>';
+} else {
+$output .= '<li class="breadcrumb-item active" aria-current="page">' . get_the_title() . '</li>';
+}
+}
+
+$output .= '</ol>';
+$output .= '</nav>';
+
+return $output;
+}
+
+add_shortcode('custom_breadcrumbs', 'custom_breadcrumbs_shortcode');
+
+// Add custom icon input to the shortcode generator
+function custom_breadcrumbs_shortcode_generator() {
+$icon = '';
+if (isset($_POST['submit'])) {
+$icon = sanitize_text_field($_POST['icon']);
+}
+?>
+
+  <div class="wrap">
+    <h1>Custom Breadcrumbs Shortcode Generator</h1>
+    <form method="post">
+      <table class="form-table">
+        <tr>
+          <th><label for="icon">Custom Icon (Font Awesome)</label></th>
+          <td><input type="text" name="icon" id="icon" value="<?php echo $icon; ?>" class="regular-text"></td>
+        </tr>
+      </table>
+      <p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Generate Shortcode"></p>
+    </form>
+    <?php if ($icon) { ?>
+    <h2>Generated Shortcode</h2>
+    <p>Copy and paste this shortcode into your WordPress post or page:</p>
+    <code>[custom_breadcrumbs icon="<?php echo $icon; ?>"]</code>
+    <?php } ?>
+  </div>
+  <?php
+}
+function custom_breadcrumbs_shortcode_generator_menu() {
+add_submenu_page('options-general.php', 'Custom Breadcrumbs Shortcode Generator', 'Custom Breadcrumbs', 'manage_options', 'custom-breadcrumbs', 'custom_breadcrumbs_shortcode_generator');
+}
+
+add_action('admin_menu', 'custom_breadcrumbs_shortcode_generator_menu');
